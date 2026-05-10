@@ -1,0 +1,44 @@
+{
+  "metric": "mae",
+  "training_progress_metric": "normalized_mae",
+  "num_folds": 3,
+  "train_mae_norm_mean": 0.13573472946882248,
+  "train_mae_norm_std": 0.021653088041957938,
+  "validation_mae_norm_mean": 0.285824033121268,
+  "validation_mae_norm_std": 0.20188240671842606,
+  "train_mae_raw_mean": 0.059540157516797386,
+  "train_mae_raw_std": 0.016991416374779602,
+  "validation_mae_raw_mean": 0.11261141921083133,
+  "validation_mae_raw_std": 0.0680140106486346,
+  "best_epoch_mean": 26.666666666666668,
+  "best_epoch_median": 25,
+  "folds": [
+    {
+      "validation_name": "chirp",
+      "best_epoch": 20,
+      "checkpoint_path": "checkpoints/best_so_far/chirp/model.pt",
+      "train_mae_norm": 0.16599823534488678,
+      "validation_mae_norm": 0.12467477470636368,
+      "train_mae_raw": 0.07976868748664856,
+      "validation_mae_raw": 0.05278288945555687
+    },
+    {
+      "validation_name": "random",
+      "best_epoch": 25,
+      "checkpoint_path": "checkpoints/best_so_far/random/model.pt",
+      "train_mae_norm": 0.1246495172381401,
+      "validation_mae_norm": 0.1622958779335022,
+      "train_mae_raw": 0.06065831333398819,
+      "validation_mae_raw": 0.07730092853307724
+    },
+    {
+      "validation_name": "square",
+      "best_epoch": 35,
+      "checkpoint_path": "checkpoints/best_so_far/square/model.pt",
+      "train_mae_norm": 0.11655643582344055,
+      "validation_mae_norm": 0.570501446723938,
+      "train_mae_raw": 0.0381934717297554,
+      "validation_mae_raw": 0.20775043964385986
+    }
+  ]
+}

@@ -17,17 +17,19 @@ from model import build_model_from_config
 
 config_pars = {
     "lr": 1e-3,
-    "max_epochs": 2000,
-    "type": "RNN",
-    "n_hidden_states": 4,
-    "hidden_sizes": [4],
-    "activation": "ReLU",
+    "max_epochs": 3000,
+    "type": "LTC",
+    "n_hidden_states": 64,
+    "hidden_sizes": [64, 64],
+    "activation": "Tanh",
     "num_layers": 1,
     "dropout_prob": 0.0,
-    "weight_decay": 0.0,
+    "weight_decay": 1e-4,
     "grad_clip_norm": 1.0,
-    "early_stopping_patience": 8,
+    "early_stopping_patience": 20,
     "direct_feedthrough": True,
+    "dt": 4.0,
+    "tbptt_chunk_size": 0,
 }
 
 
@@ -139,15 +141,37 @@ def compute_training_loss(
     normalized_sequences: list[prepare.TankSequence],
     device: str,
 ) -> torch.Tensor:
+    chunk_size = config_pars.get("tbptt_chunk_size", 0)
     total_sse = None
     total_count = 0
 
     for sequence in normalized_sequences:
-        y_hat, _ = model(sequence.u.to(device), sequence.y0.to(device))
-        diff = y_hat - sequence.y.to(device)
-        sse = torch.sum(diff**2)
-        total_sse = sse if total_sse is None else total_sse + sse
-        total_count += diff.numel()
+        u = sequence.u.to(device)
+        y_tgt = sequence.y.to(device)
+        y0 = sequence.y0.to(device)
+        T = u.shape[1]
+
+        if chunk_size and chunk_size > 0 and hasattr(model, "build_initial_state") and hasattr(model, "forward_chunk"):
+            hidden = model.build_initial_state(y0)
+            for start in range(0, T, chunk_size):
+                end = min(start + chunk_size, T)
+                u_chunk = u[:, start:end, :]
+                y_chunk = y_tgt[:, start:end, :]
+                y_hat_chunk, hidden = model.forward_chunk(u_chunk, hidden)
+                diff = y_hat_chunk - y_chunk
+                sse = torch.sum(diff**2)
+                total_sse = sse if total_sse is None else total_sse + sse
+                total_count += diff.numel()
+                if isinstance(hidden, tuple):
+                    hidden = tuple(h.detach() for h in hidden)
+                else:
+                    hidden = hidden.detach()
+        else:
+            y_hat, _ = model(u, y0)
+            diff = y_hat - y_tgt
+            sse = torch.sum(diff**2)
+            total_sse = sse if total_sse is None else total_sse + sse
+            total_count += diff.numel()
 
     if total_sse is None or total_count == 0:
         raise RuntimeError("Training loss could not be computed because no training sequences were provided.")

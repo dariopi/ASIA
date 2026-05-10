@@ -158,6 +158,14 @@ class CascadedTankModel(nn.Module):
             return hidden, cell
         return hidden
 
+    def forward_chunk(
+        self, u_chunk: torch.Tensor, hidden_state
+    ) -> tuple[torch.Tensor, object]:
+        y_hat, new_hidden = self.recurrent_block(u_chunk, hidden_state)
+        if self.direct_layer is not None:
+            y_hat = y_hat + self.direct_layer(u_chunk)
+        return y_hat, new_hidden
+
     def forward(self, u: torch.Tensor, y0: torch.Tensor) -> tuple[torch.Tensor, object]:
         initial_state = self.build_initial_state(y0)
         y_hat, hidden_state = self.recurrent_block(u, initial_state)

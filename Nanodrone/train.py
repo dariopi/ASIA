@@ -10,23 +10,34 @@ from pathlib import Path
 
 import numpy as np
 import torch
+from torch.utils.data import DataLoader, TensorDataset
 
 import prepare
 from model import build_model_from_config
 
 
 config_pars = {
-    "lr": 2e-3,
-    "max_epochs": 1200,
+    "lr": 1e-3,
+    "max_epochs": 500,
     "type": "LSTM",
-    "n_hidden_states": 32,
-    "hidden_sizes": [32],
+    "model_class": "KinematicsLSTMModel",
+    "n_hidden_states": 256,
+    "hidden_sizes": [128, 64],
     "activation": "ReLU",
-    "num_layers": 1,
-    "dropout_prob": 0.0,
-    "weight_decay": 0.0,
+    "num_layers": 5,
+    "dropout_prob": 0.1,
+    "weight_decay": 1e-4,
+    "optimizer": "adamw",
     "grad_clip_norm": 1.0,
     "early_stopping_patience": 20,
+    "batch_size": 128,
+    "use_squared_inputs": True,
+    "loss": "mae",
+    "multihorizon_loss": True,
+    "input_noise_std": 0.05,
+    "initial_noise_std": 0.02,
+    "teacher_ratio_start": 0.3,
+    "eval_every_override": 5,
 }
 
 
@@ -44,7 +55,7 @@ def initialize_fold_log(log_path: Path, fold_name: str) -> None:
     log_path.parent.mkdir(parents=True, exist_ok=True)
     with log_path.open("w", encoding="utf-8") as handle:
         handle.write(f"{fold_name}\n")
-        handle.write("epoch,train_loss_norm_mse,train_mae_norm,val_mae_norm\n")
+        handle.write("epoch,train_loss,train_mae_norm,val_mae_norm\n")
 
 
 # ---------------------------------------------------------------------------
@@ -69,25 +80,20 @@ def compute_training_loss(
     normalized_sequences: list[prepare.DroneSequence],
     device: str,
 ) -> torch.Tensor:
-    """MSE loss summed across all windows, time steps, and outputs, then normalised."""
-    total_sse = None
+    total_loss = None
     total_count = 0
-
     for sequence in normalized_sequences:
-        u = sequence.u.to(device)       # (N, 50, 4)
-        y_tgt = sequence.y.to(device)   # (N, 50, 12)
-        y0 = sequence.y0.to(device)     # (N, 1, 12)
-
+        u    = sequence.u.to(device)
+        y_tgt = sequence.y.to(device)
+        y0   = sequence.y0.to(device)
         y_hat, _ = model(u, y0)
         diff = y_hat - y_tgt
-        sse = torch.sum(diff ** 2)
-        total_sse = sse if total_sse is None else total_sse + sse
+        loss = torch.sum(diff ** 2)
+        total_loss = loss if total_loss is None else total_loss + loss
         total_count += diff.numel()
-
-    if total_sse is None or total_count == 0:
+    if total_loss is None or total_count == 0:
         raise RuntimeError("No training sequences provided.")
-
-    return total_sse / total_count
+    return total_loss / total_count
 
 
 def evaluate_one_sequence(
@@ -97,12 +103,10 @@ def evaluate_one_sequence(
     normalizer: prepare.Normalizer,
     device: str,
 ) -> dict[str, float]:
-    """MAE on a single trajectory (all its windows)."""
     model.eval()
     with torch.no_grad():
         y_hat_norm, _ = model(sequence_norm.u.to(device), sequence_norm.y0.to(device))
         y_hat_raw = normalizer.denormalize_y_tensor(y_hat_norm)
-
     return {
         "mae_norm": prepare.mae(
             sequence_norm.y.detach().cpu().numpy(),
@@ -122,10 +126,8 @@ def aggregate_metrics_across_sequences(
     normalizer: prepare.Normalizer,
     device: str,
 ) -> dict[str, float]:
-    """MAE pooled over all training trajectories."""
     all_targets_norm, all_predictions_norm = [], []
     all_targets_raw, all_predictions_raw = [], []
-
     model.eval()
     with torch.no_grad():
         for raw_seq, norm_seq in zip(raw_sequences, norm_sequences):
@@ -135,7 +137,6 @@ def aggregate_metrics_across_sequences(
             all_predictions_norm.append(y_hat_norm.detach().cpu().numpy())
             all_targets_raw.append(raw_seq.y.detach().cpu().numpy())
             all_predictions_raw.append(y_hat_raw.detach().cpu().numpy())
-
     return {
         "mae_norm": prepare.mae(
             np.concatenate(all_targets_norm, axis=0),
@@ -178,12 +179,17 @@ def train_one_fold(
     model = build_model(config_pars, general_config)
 
     wd = config_pars.get("weight_decay", 0.0)
-    optimizer = torch.optim.Adam(
-        model.parameters(), lr=config_pars["lr"], weight_decay=wd
-    )
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="min", factor=0.5, patience=2, threshold=1e-4, min_lr=1e-5,
-    )
+    use_adamw = config_pars.get("optimizer", "adam") == "adamw"
+    if use_adamw:
+        optimizer = torch.optim.AdamW(model.parameters(), lr=config_pars["lr"], weight_decay=wd)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=config_pars["max_epochs"], eta_min=1e-5
+        )
+    else:
+        optimizer = torch.optim.Adam(model.parameters(), lr=config_pars["lr"], weight_decay=wd)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, mode="min", factor=0.5, patience=2, threshold=1e-4, min_lr=1e-5,
+        )
 
     best_state_dict = copy.deepcopy(model.state_dict())
     best_epoch = 0
@@ -194,6 +200,15 @@ def train_one_fold(
 
     fold_log_path = log_dir / f"train_{validation_name}.log"
     initialize_fold_log(fold_log_path, validation_name)
+
+    batch_size = config_pars.get("batch_size", None)
+    loader = None
+    if batch_size:
+        u_all  = torch.cat([seq.u  for seq in train_list_norm], dim=0)
+        y_all  = torch.cat([seq.y  for seq in train_list_norm], dim=0)
+        y0_all = torch.cat([seq.y0 for seq in train_list_norm], dim=0)
+        dataset = TensorDataset(u_all, y_all, y0_all)
+        loader  = DataLoader(dataset, batch_size=batch_size, shuffle=True, drop_last=False)
 
     with torch.no_grad():
         initial_loss = compute_training_loss(model, train_list_norm, device=device)
@@ -206,31 +221,68 @@ def train_one_fold(
     best_val_mae_norm = float(initial_val["mae_norm"])
 
     initial_line = (
-        f"0,"
-        f"{initial_loss.item():.6f},"
-        f"{initial_train['mae_norm']:.6f},"
-        f"{initial_val['mae_norm']:.6f}"
+        f"0,{initial_loss.item():.6f},"
+        f"{initial_train['mae_norm']:.6f},{initial_val['mae_norm']:.6f}"
     )
     print(f"[{validation_name}] {initial_line}")
     append_log_line(fold_log_path, initial_line)
 
-    for epoch in range(1, config_pars["max_epochs"] + 1):
+    use_mae_loss        = config_pars.get("loss", "mse") == "mae"
+    use_multihorizon    = config_pars.get("multihorizon_loss", False)
+    u_noise_std         = config_pars.get("input_noise_std", 0.0)
+    y0_noise_std        = config_pars.get("initial_noise_std", 0.0)
+    grad_clip           = config_pars.get("grad_clip_norm", 0.0)
+    teacher_ratio_start = config_pars.get("teacher_ratio_start", 0.0)
+    max_epochs          = config_pars["max_epochs"]
+
+    for epoch in range(1, max_epochs + 1):
         if time.perf_counter() - fold_start_time >= fold_time_budget_seconds:
             break
 
+        # Linear decay: 0.3 at epoch 1 -> 0.0 at epoch max_epochs
+        teacher_ratio = teacher_ratio_start * max(0.0, 1.0 - (epoch - 1) / max(1, max_epochs - 1))
+
         model.train()
-        optimizer.zero_grad()
 
-        loss = compute_training_loss(model, train_list_norm, device=device)
-        loss.backward()
+        if loader is not None:
+            last_loss = None
+            for u_b, y_b, y0_b in loader:
+                u_b  = u_b.to(device)
+                y_b  = y_b.to(device)
+                y0_b = y0_b.to(device)
+                if u_noise_std > 0.0:
+                    u_b  = u_b  + u_noise_std  * torch.randn_like(u_b)
+                if y0_noise_std > 0.0:
+                    y0_b = y0_b + y0_noise_std * torch.randn_like(y0_b)
+                optimizer.zero_grad()
+                y_hat, _ = model(u_b, y0_b, teacher_targets=y_b, teacher_ratio=teacher_ratio)
+                if use_mae_loss:
+                    if use_multihorizon:
+                        loss_b = (
+                            torch.mean(torch.abs(y_hat - y_b))
+                            + 0.5 * torch.mean(torch.abs(y_hat[:, :25, :] - y_b[:, :25, :]))
+                            + 0.25 * torch.mean(torch.abs(y_hat[:, :10, :] - y_b[:, :10, :]))
+                        )
+                    else:
+                        loss_b = torch.mean(torch.abs(y_hat - y_b))
+                else:
+                    loss_b = torch.mean((y_hat - y_b) ** 2)
+                loss_b.backward()
+                if grad_clip > 0.0:
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
+                optimizer.step()
+                last_loss = loss_b
+            loss = last_loss
+        else:
+            optimizer.zero_grad()
+            loss = compute_training_loss(model, train_list_norm, device=device)
+            loss.backward()
+            if grad_clip > 0.0:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
+            optimizer.step()
 
-        grad_clip = config_pars.get("grad_clip_norm", 0.0)
-        if grad_clip and grad_clip > 0.0:
-            torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
-
-        optimizer.step()
-
-        should_evaluate = epoch == 1 or epoch % eval_every == 0 or epoch == config_pars["max_epochs"]
+        should_evaluate = (epoch == 1 or epoch % eval_every == 0
+                           or epoch == max_epochs)
         if not should_evaluate:
             continue
 
@@ -245,10 +297,8 @@ def train_one_fold(
         )
 
         line = (
-            f"{epoch},"
-            f"{loss.item():.6f},"
-            f"{train_metrics['mae_norm']:.6f},"
-            f"{val_metrics['mae_norm']:.6f}"
+            f"{epoch},{loss.item():.6f},"
+            f"{train_metrics['mae_norm']:.6f},{val_metrics['mae_norm']:.6f}"
         )
         print(f"[{validation_name}] {line}")
         append_log_line(fold_log_path, line)
@@ -261,7 +311,10 @@ def train_one_fold(
         else:
             stale_evaluations += 1
 
-        scheduler.step(val_metrics["mae_norm"])
+        if use_adamw:
+            scheduler.step()
+        else:
+            scheduler.step(val_metrics["mae_norm"])
 
         if stale_evaluations >= config_pars["early_stopping_patience"]:
             break
@@ -308,11 +361,11 @@ def train_one_fold(
 # ---------------------------------------------------------------------------
 
 def summarize_folds(fold_results: list[dict]) -> dict:
-    train_norm = np.asarray([r["train_mae_norm"] for r in fold_results])
-    val_norm = np.asarray([r["validation_mae_norm"] for r in fold_results])
-    train_raw = np.asarray([r["train_mae_raw"] for r in fold_results])
-    val_raw = np.asarray([r["validation_mae_raw"] for r in fold_results])
-    best_epochs = np.asarray([r["best_epoch"] for r in fold_results])
+    train_norm  = np.asarray([r["train_mae_norm"]  for r in fold_results])
+    val_norm    = np.asarray([r["validation_mae_norm"] for r in fold_results])
+    train_raw   = np.asarray([r["train_mae_raw"]   for r in fold_results])
+    val_raw     = np.asarray([r["validation_mae_raw"]  for r in fold_results])
+    best_epochs = np.asarray([r["best_epoch"]      for r in fold_results])
 
     return {
         "metric": "mae",
@@ -385,6 +438,7 @@ def main() -> dict:
     fold_names = sorted(train_sequences)
     n_workers = len(fold_names)
     general_config["threads_per_worker"] = max(1, torch.get_num_threads() // n_workers)
+    general_config["eval_every"] = config_pars.get("eval_every_override", general_config["eval_every"])
 
     mp_context = multiprocessing.get_context("spawn")
     with ProcessPoolExecutor(max_workers=n_workers, mp_context=mp_context) as executor:

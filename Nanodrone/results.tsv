@@ -1,0 +1,29 @@
+commit	val_MAE	test_MAE	status	description
+1fd5e58	0.706694	0.277143	keep	baseline LSTM-32 1-layer MSE
+85145d1	0.446963	0.143408	discard	quadrotor physics model (rotation matrix + euler kinematics + LSTM residual) — angle normalization issue
+76a0011	0.340666	0.102182	keep	kinematic LSTM + motor^2 features; chirp=0.146 random=0.255 square=0.621
+121251d	0.456594	NA	discard	Koopman kinematic: linear lifted dynamics — insufficient for nonlinear quadrotor (square=0.801)
+a70bf76	0.412376	NA	discard	causal Transformer (no state feedback): chirp=0.195 random=0.271 square=0.771 — slow convergence, worse than LSTM
+b0cad59	0.363258	NA	discard	BiEncoder kinematic: bidirectional encoder + state-feedback decoder; random=0.296 worse, square=0.641
+a7b54a4	0.309645	0.090118	keep	scheduled sampling teacher forcing decay 0.3->0; chirp=0.149 random=0.193 square=0.587 — new best
+d9779f4	0.315900	NA	discard	teacher_ratio_start=0.5 (higher teacher forcing) — worse than 0.3
+dd5bb50	0.307700	0.093004	keep	n_hidden_states=256; chirp=0.147 random=0.197 square=0.579 — new best
+82420bd	0.319132	NA	discard	n_hidden=320 hidden_sizes=[192,128] — over-parameterized for data budget
+e80fb5c	0.295848	0.088806	keep	num_layers=3, n_hidden=256; chirp=0.142 random=0.180 square=0.566 — new best
+c985f75	0.295314	0.084567	keep	num_layers=4, n_hidden=256; chirp=0.140 random=0.179 square=0.567 — marginal new best
+f444da0	0.300996	NA	discard	state_noise_std=0.02 on rollout y_prev — training harder, worse generalization
+670bb0b	0.315507	NA	discard	GRU instead of LSTM — fewer params but worse generalization
+afdd8e5	0.302080	NA	discard	teacher decay over 100 epochs — free-run training not better
+aba7ec0	0.297797	NA	discard	cosine_t_max=100 (aggressive LR decay) — marginal miss
+4ddbcb9	0.304140	NA	discard	u_prev+u_prev^2 as extra LSTM inputs — motor accel feature hurt
+ef7a9fc	0.300466	NA	discard	dropout=0.05 — slightly worse than 0.1
+c94c5fd	0.288651	0.084229	keep	eval_every=5 (finer resolution); chirp=0.135 random=0.172 square=0.559 — new best
+0cf3bb2	0.288912	NA	discard	eval_every=3 — essentially same as eval_every=5
+67a9296	0.291129	NA	discard	n_hidden=320 with eval_every=5 — still worse than n_hidden=256
+f12c49c	0.291138	NA	discard	weight_decay=5e-5 — slightly worse than 1e-4
+e012e05	0.288651	NA	discard	early_stopping_patience=30 — same result, best checkpoint unchanged
+c824f40	0.289945	NA	discard	LSTM internal dropout=0.1 — slightly worse than no LSTM dropout
+36a3ec0	0.289626	NA	discard	step-1 term in multihorizon loss — marginal miss
+512f354	0.287803	0.082455	keep	batch_size=128; chirp=0.129 random=0.162 square=0.572 — new best
+93e4eff	0.288208	NA	discard	batch_size=256 — marginal miss (essentially tied)
+d463c2e	0.298635	NA	discard	num_layers=5 — too deep, diminishing returns
