@@ -26,4 +26,6 @@ c824f40	0.289945	NA	discard	LSTM internal dropout=0.1 — slightly worse than no
 36a3ec0	0.289626	NA	discard	step-1 term in multihorizon loss — marginal miss
 512f354	0.287803	0.082455	keep	batch_size=128; chirp=0.129 random=0.162 square=0.572 — new best
 93e4eff	0.288208	NA	discard	batch_size=256 — marginal miss (essentially tied)
+8e376ee	0.285824	0.081634	keep	num_layers=5, batch=128; chirp=0.125 random=0.162 square=0.571 — new best
+2184c66	0.298419	NA	discard	num_layers=6, batch=128 — too deep
 d463c2e	0.298635	NA	discard	num_layers=5 — too deep, diminishing returns

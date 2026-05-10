@@ -449,3 +449,51 @@
 
 ---
 
+## Iteration 28 — 5-Layer LSTM with batch=128
+
+**Commit:** 8e376ee
+
+**What:** num_layers=5 + batch_size=128. Previously num_layers=5 with batch=64 gave 0.299; now with batch=128.
+
+**Why:** Larger batches stabilize training for deeper networks. 5-layer LSTM was failing with noisy small-batch gradients.
+
+**Result:** val_MAE=0.2858 (chirp=0.125, random=0.162, square=0.571). New best. Chirp 0.125 (from 0.129). Square slightly improved (0.571 vs 0.572). Test ensemble MAE=0.081634. Depth + stable batches is the winning combination.
+
+**Status:** keep (new gen03 best)
+
+**Next:** Try num_layers=6 with batch=128. Or try num_layers=5 + batch=256. Or try n_hidden=320 with 5 layers.
+
+---
+
+## Iteration 29 — 6-Layer LSTM with batch=128
+
+**Commit:** 2184c66
+
+**What:** num_layers=6 + batch_size=128.
+
+**Why:** Continue depth scaling after iter28 improvement.
+
+**Result:** val_MAE=0.2984 (worse than iter28 0.2858). 6 layers too deep — even with batch=128, gradient vanishing/instability is a problem. Optimal depth with batch=128 is 5 layers.
+
+**Status:** discard — reset to 8e376ee
+
+**Next:** Try n_hidden=320 with 5 layers + batch=128. Previously n_hidden=320 with 4 layers and eval_every=25 failed; with 5 layers and finer eval/larger batch this might work.
+
+---
+
+## Iteration 30 — n_hidden=320, 5 layers, batch=128
+
+**Commit:** b81e9b0
+
+**What:** n_hidden=320 (from 256), 5 layers, batch=128.
+
+**Why:** 256-hidden 5-layer model is the current best; try wider hidden state for more capacity.
+
+**Result:** val_MAE=0.2890 (worse than iter28 0.2858). n_hidden=320 with 5 layers over-parameterized — over-fitting or harder optimization landscape. n_hidden=256 remains optimal.
+
+**Status:** discard — reset to 8e376ee
+
+**Next:** Try teacher_ratio_start=0.2 (lower than current 0.3). Less teacher forcing may improve rollout generalization, especially on the square fold.
+
+---
+

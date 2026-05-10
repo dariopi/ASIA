@@ -1,0 +1,16 @@
+commit	val_RMSE	test_RMSE	status	description
+70b194b	0.681189	1.445374	keep	baseline RNN n_hidden=4
+c3027a7	1.024338	1.684382	discard	PHYSICAL_RK4 grey-box
+089a233	0.429833	1.349403	keep	LSTM n_hidden=128 num_layers=2 TBPTT chunk=50
+6b35665	0.768142	2.456720	discard	NSSM 8D state Euler residual (unstable)
+eebe0df	0.250034	0.297749	keep	LTC CfC n_hidden=64 dt=4.0
+aed3118	0.355295	0.420770	discard	LTC n_hidden=128 (overfits more)
+f9551b6	0.286772	0.429407	discard	LTC-64 tau[4,500] dropout=0.1 wd=2e-4 (underfit)
+b176035	0.251053	0.297749	discard	LTC-64 input noise std=0.05 (no improvement)
+ae64f97	0.364036	0.614270	discard	diagonal SSM linear dynamics (underpowered)
+15480f2	0.387709	0.671093	discard	GRU-64 LTC-gate-init TBPTT (overfits badly)
+180d820	0.286139	0.534295	discard	CascadedLTC two-timescale tank1/tank2 (cascade too rigid)
+eb6d0ef	0.808526	1.327646	discard	HybridLTC physics z1/z2 as LTC input — detach fix, still much worse (val=0.808)
+4ba46ed	0.544274	1.102400	discard	CausalDilatedCNN WaveNet-style 7 layers RF=127 — no temporal stability, overfits badly
+6fb533b	0.371688	0.666118	discard	LTC n_hidden=32 — underpowered (val=0.372), sweet spot is n_hidden=64
+2a750a7	0.254415	0.300814	discard	AdamW+CosineAnnealingLR patience=30 — fold_1 better (0.182) but fold_2 worse (0.327)

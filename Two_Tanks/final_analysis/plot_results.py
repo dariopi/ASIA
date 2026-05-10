@@ -9,6 +9,8 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
+IEEE_SINGLE_COLUMN_WIDTH_IN = 3.5
+
 
 @dataclass
 class ResultRow:
@@ -49,10 +51,16 @@ def read_results(path: Path) -> list[ResultRow]:
 
 
 def short_label(description: str) -> str:
+    """Return a concise, human-readable tag for a new-best iteration."""
+    desc = description.lower()
+    if "baseline" in desc:
+        return "RNN baseline\n(4 hidden units)"
+    if "lstm" in desc and "128" in desc:
+        return "LSTM-128\n+ truncated BPTT"
+    if "ltc" in desc or "cfc" in desc:
+        return "LTC/CfC-64"
     tokens = re.findall(r"[A-Za-z][A-Za-z0-9_-]*", description)
-    if not tokens:
-        return "best"
-    return " ".join(tokens[:2])
+    return " ".join(tokens[:2]) if tokens else "best"
 
 
 def running_best(values: list[float]) -> list[float]:
@@ -80,18 +88,22 @@ def plot_results(rows: list[ResultRow], output_path: Path) -> None:
             current_best = row.val_rmse
             record_points.append((row.iteration, row.val_rmse, short_label(row.description)))
 
-    fig, ax = plt.subplots(figsize=(13, 6.8), constrained_layout=True)
+    W_mm, H_mm = 180, 72
+    fig, ax = plt.subplots(
+        figsize=(W_mm / 25.4, H_mm / 25.4),
+        constrained_layout=True,
+    )
     fig.patch.set_facecolor("#f6f7fb")
     ax.set_facecolor("#ffffff")
 
     ax.scatter(
         iterations,
         values,
-        s=34,
-        color="#9ecae1",
-        alpha=0.42,
+        s=22,
+        color="#fc8d59",
+        alpha=0.65,
         edgecolors="none",
-        label="val_RMSE",
+        label="Validation RMSE",
         zorder=2,
     )
     ax.step(
@@ -99,48 +111,56 @@ def plot_results(rows: list[ResultRow], output_path: Path) -> None:
         best_values,
         where="post",
         color="#d95f02",
-        linewidth=2.4,
+        linewidth=2.0,
         label="best so far",
         zorder=3,
     )
     ax.scatter(
         [item[0] for item in record_points],
         [item[1] for item in record_points],
-        s=52,
+        s=32,
         color="#a50f15",
         edgecolors="white",
-        linewidths=0.8,
+        linewidths=0.7,
         zorder=4,
     )
 
+    # Per-label offsets (offset points) tuned so the three tags don't overlap:
+    # idx 0 = baseline (high y → push below), idx 1 = LSTM (mid → push above),
+    # idx 2 = LTC (low y → push above). LSTM and LTC are on different x positions
+    # so "above" keeps them vertically separated.
+    _offsets = [(3, -38), (3, 16), (3, 16)]
     for idx, (iteration, value, label) in enumerate(record_points):
-        offset_y = 11 if idx % 2 == 0 else -14
+        ox, oy = _offsets[idx] if idx < len(_offsets) else (5, 10)
         ax.annotate(
             label,
             xy=(iteration, value),
-            xytext=(8, offset_y),
+            xytext=(ox, oy),
             textcoords="offset points",
-            fontsize=8,
+            fontsize=7.5,
             color="#7f1d1d",
-            bbox=dict(boxstyle="round,pad=0.18", fc="white", ec="#f3c7b0", alpha=0.92),
-            arrowprops=dict(arrowstyle="-", color="#f0a27a", lw=0.8, alpha=0.8),
+            multialignment="center",
+            bbox=dict(boxstyle="round,pad=0.22", fc="white", ec="#f3c7b0", alpha=0.95),
+            arrowprops=dict(arrowstyle="-", color="#f0a27a", lw=0.7, alpha=0.85),
             zorder=5,
         )
 
-    ax.set_title("Evolution of validation RMSE across iterations", fontsize=14, pad=14)
-    ax.set_xlabel("Iteration")
-    ax.set_ylabel("val_RMSE")
+    ax.set_xlabel("Iteration", fontsize=10)
+    ax.set_ylabel("Validation RMSE", fontsize=10)
     ax.grid(True, which="major", alpha=0.18, linewidth=0.8)
-    ax.legend(loc="upper right", frameon=True, framealpha=0.95)
+    ax.tick_params(labelsize=9)
 
     ymin = min(values + best_values)
     ymax = max(values + best_values)
-    margin = max(0.005, 0.02 * (ymax - ymin if ymax > ymin else 1.0))
-    ax.set_ylim(ymin - margin, max(ymax + margin, 0.75))
+    margin_lo = max(0.005, 0.02 * (ymax - ymin))
+    margin_hi = max(0.03, 0.06 * (ymax - ymin))
+    ax.set_ylim(ymin - margin_lo, ymax + margin_hi)
     ax.set_xlim(0.5, len(rows) + 0.5)
 
+    ax.legend(fontsize=8, framealpha=0.9, loc="upper right")
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(output_path, dpi=200)
+    fig.savefig(output_path, dpi=400)
     plt.close(fig)
 
 
@@ -155,7 +175,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path(__file__).resolve().with_name("results_plot.png"),
+        default=Path(__file__).resolve().with_name("cascaded_final_analysis.png"),
         help="Path of the PNG plot to write.",
     )
     return parser.parse_args()

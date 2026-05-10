@@ -36,7 +36,7 @@ config_pars = {
     "multihorizon_loss": True,
     "input_noise_std": 0.05,
     "initial_noise_std": 0.02,
-    "teacher_ratio_start": 0.3,
+    "teacher_ratio_start": 0.2,
     "eval_every_override": 5,
 }
 

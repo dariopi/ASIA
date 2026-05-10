@@ -204,10 +204,12 @@ def train_one_fold(
     fold_dir.mkdir(parents=True, exist_ok=True)
 
     model = build_model(config_pars, general_config)
+    wd = config_pars.get("weight_decay", 0.0)
+    decay_params = [p for n, p in model.named_parameters() if "log_tau" not in n and "ic_net" not in n]
+    no_decay_params = [p for n, p in model.named_parameters() if "log_tau" in n or "ic_net" in n]
     optimizer = torch.optim.Adam(
-        model.parameters(),
+        [{"params": decay_params, "weight_decay": wd}, {"params": no_decay_params, "weight_decay": 0.0}],
         lr=config_pars["lr"],
-        weight_decay=config_pars.get("weight_decay", 0.0),
     )
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,

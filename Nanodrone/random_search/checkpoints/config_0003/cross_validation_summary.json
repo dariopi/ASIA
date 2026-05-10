@@ -1,0 +1,44 @@
+{
+  "metric": "mae",
+  "training_progress_metric": "normalized_mae",
+  "num_folds": 3,
+  "train_mae_norm_mean": 0.1233367919921875,
+  "train_mae_norm_std": 0.024675359196878795,
+  "validation_mae_norm_mean": 0.6345470050970713,
+  "validation_mae_norm_std": 0.2847606794840099,
+  "train_mae_raw_mean": 0.059030731519063316,
+  "train_mae_raw_std": 0.018516189072295818,
+  "validation_mae_raw_mean": 0.2671145747105281,
+  "validation_mae_raw_std": 0.10406336001127958,
+  "best_epoch_mean": 33.333333333333336,
+  "best_epoch_median": 25,
+  "folds": [
+    {
+      "validation_name": "chirp",
+      "best_epoch": 25,
+      "checkpoint_path": "/home/dpiga/benchmarks/NanoDrone_3Fold/random_search/checkpoints/config_0003/chirp/model.pt",
+      "train_mae_norm": 0.1451323926448822,
+      "validation_mae_norm": 0.3197995126247406,
+      "train_mae_raw": 0.07514377683401108,
+      "validation_mae_raw": 0.13818775117397308
+    },
+    {
+      "validation_name": "random",
+      "best_epoch": 25,
+      "checkpoint_path": "/home/dpiga/benchmarks/NanoDrone_3Fold/random_search/checkpoints/config_0003/random/model.pt",
+      "train_mae_norm": 0.1360403448343277,
+      "validation_mae_norm": 0.5743581652641296,
+      "train_mae_raw": 0.06885020434856415,
+      "validation_mae_raw": 0.27011922001838684
+    },
+    {
+      "validation_name": "square",
+      "best_epoch": 50,
+      "checkpoint_path": "/home/dpiga/benchmarks/NanoDrone_3Fold/random_search/checkpoints/config_0003/square/model.pt",
+      "train_mae_norm": 0.0888376384973526,
+      "validation_mae_norm": 1.0094833374023438,
+      "train_mae_raw": 0.033098213374614716,
+      "validation_mae_raw": 0.39303675293922424
+    }
+  ]
+}

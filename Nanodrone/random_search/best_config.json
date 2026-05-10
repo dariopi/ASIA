@@ -1,0 +1,16 @@
+{
+  "config_id": "26",
+  "val_MAE": "0.338447",
+  "test_MAE_melon": "0.093808",
+  "chirp": "0.152101",
+  "random": "0.253196",
+  "square": "0.610045",
+  "model_class": "PhysicsResidualLSTM",
+  "n_hidden": "128",
+  "num_layers": "3",
+  "hidden_sizes": "[256, 128]",
+  "lr": "1.69e-03",
+  "dropout": "0.25",
+  "weight_decay": "1e-05",
+  "description": "Phys+Res h=128 L=3 lr=1.7e-03 do=0.25 wd=1e-05"
+}

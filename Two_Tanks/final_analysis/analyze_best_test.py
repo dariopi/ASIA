@@ -19,6 +19,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import prepare
 import test as test_eval
 
+IEEE_SINGLE_COLUMN_WIDTH_IN = 3.5
+
 
 def read_results(path: Path) -> list[dict[str, str]]:
     if not path.exists():
@@ -67,8 +69,9 @@ def evaluate_checkpoint_set(
     checkpoint_set: str,
 ) -> tuple[dict[str, object], np.ndarray, np.ndarray, np.ndarray]:
     _, test_sequence, general_config = prepare.load_datasets_and_config()
-    checkpoint_root = Path(general_config["checkpoint_path"])
+    checkpoint_root = (repo_root / general_config["checkpoint_path"]).resolve()
     checkpoint_paths = test_eval.load_checkpoint_paths(checkpoint_root, checkpoint_set)
+    checkpoint_paths = [repo_root / p if not p.is_absolute() else p for p in checkpoint_paths]
     if not checkpoint_paths:
         raise FileNotFoundError(f"No fold checkpoints found for checkpoint set {checkpoint_set!r}.")
 
@@ -137,7 +140,10 @@ def plot_test_trajectories(
 ) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    fig, ax = plt.subplots(figsize=(13, 6.5), constrained_layout=True)
+    fig, ax = plt.subplots(
+        figsize=(90 / 25.4, 72 / 25.4),
+        constrained_layout=True,
+    )
     fig.patch.set_facecolor("#f6f7fb")
     ax.set_facecolor("#ffffff")
 
@@ -166,47 +172,51 @@ def plot_test_trajectories(
         zorder=2,
     )
 
-    ax.set_title(title, fontsize=14, pad=14)
-    ax.set_xlabel("time [s]")
-    ax.set_ylabel(prepare.output_names[0])
+    ax.set_title(title, fontsize=8.5, pad=8)
+    ax.set_xlabel("Time [s]", fontsize=10)
+    ax.set_ylabel(prepare.output_names[0], fontsize=10)
     ax.grid(True, alpha=0.22, linewidth=0.8)
-    ax.legend(loc="best", frameon=True, framealpha=0.95)
+    ax.legend(loc="best", frameon=True, framealpha=0.95, fontsize=8)
+    ax.tick_params(labelsize=9)
 
     ymin = float(np.min(np.concatenate([y_true[:, 0], ensemble_prediction[:, 0]])))
     ymax = float(np.max(np.concatenate([y_true[:, 0], ensemble_prediction[:, 0]])))
     margin = max(0.01, 0.05 * (ymax - ymin if ymax > ymin else 1.0))
     ax.set_ylim(ymin - margin, ymax + margin)
 
-    fig.savefig(output_path, dpi=200)
+    fig.savefig(output_path, dpi=400)
     plt.close(fig)
 
 
 def plot_benchmark_distribution(
     benchmark_values: list[float],
     my_test_rmse: float,
-    output_path: Path,
+    boxplot_output_path: Path,
+    histogram_output_path: Path,
 ) -> None:
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    boxplot_output_path.parent.mkdir(parents=True, exist_ok=True)
+    histogram_output_path.parent.mkdir(parents=True, exist_ok=True)
 
     values = np.asarray(benchmark_values, dtype=np.float32)
-    fig, (ax_box, ax_hist) = plt.subplots(1, 2, figsize=(13.5, 5.6), constrained_layout=True)
-    fig.patch.set_facecolor("#f6f7fb")
 
-    for ax in (ax_box, ax_hist):
-        ax.set_facecolor("#ffffff")
-        ax.grid(True, alpha=0.18, linewidth=0.8)
+    fig_box, ax_box = plt.subplots(
+        figsize=(90 / 25.4, 72 / 25.4),
+        constrained_layout=True,
+    )
+    fig_box.patch.set_facecolor("#f6f7fb")
+    ax_box.set_facecolor("#ffffff")
+    ax_box.grid(True, alpha=0.18, linewidth=0.8)
+    ax_box.tick_params(labelsize=9)
 
     ax_box.boxplot(
         values,
         vert=True,
         widths=0.5,
         patch_artist=True,
-        showmeans=True,
         boxprops=dict(facecolor="#dbe9f6", color="#4f6d8a", linewidth=1.4),
         whiskerprops=dict(color="#4f6d8a", linewidth=1.2),
         capprops=dict(color="#4f6d8a", linewidth=1.2),
         medianprops=dict(color="#b23a48", linewidth=1.6),
-        meanprops=dict(marker="o", markerfacecolor="#f4a261", markeredgecolor="white", markersize=6),
         flierprops=dict(marker="o", markerfacecolor="#9d0208", markeredgecolor="white", markersize=4, alpha=0.55),
     )
     ax_box.scatter(
@@ -217,17 +227,27 @@ def plot_benchmark_distribution(
         edgecolors="white",
         linewidths=0.9,
         zorder=4,
-        label="my test RMSE",
+        label="achieved RMSE",
     )
     ax_box.set_xticks([1])
-    ax_box.set_xticklabels(["Cascaded Tanks"])
-    ax_box.set_ylabel("Test RMSE")
-    ax_box.set_title("Benchmark test RMSE boxplot", fontsize=13, pad=12)
-    ax_box.legend(loc="upper right", frameon=True, framealpha=0.95)
+    ax_box.set_xticklabels([""])
+    ax_box.set_ylabel("Test RMSE", fontsize=10)
+    ax_box.legend(loc="upper right", frameon=True, framealpha=0.95, fontsize=8)
+    fig_box.savefig(boxplot_output_path, dpi=400, bbox_inches="tight")
+    plt.close(fig_box)
+
+    fig_hist, ax_hist = plt.subplots(
+        figsize=(90 / 25.4, 72 / 25.4),
+        constrained_layout=True,
+    )
+    fig_hist.patch.set_facecolor("#f6f7fb")
+    ax_hist.set_facecolor("#ffffff")
+    ax_hist.grid(True, alpha=0.18, linewidth=0.8)
+    ax_hist.tick_params(labelsize=9)
 
     ax_hist.hist(
         values,
-        bins=15,
+        bins=25,
         color="#9ecae1",
         edgecolor="#4f6d8a",
         alpha=0.85,
@@ -238,7 +258,7 @@ def plot_benchmark_distribution(
         color="#d62728",
         linestyle="--",
         linewidth=2.0,
-        label=f"my test RMSE = {my_test_rmse:.3f}",
+        label="achieved RMSE",
         zorder=5,
     )
     ax_hist.scatter(
@@ -250,18 +270,11 @@ def plot_benchmark_distribution(
         linewidths=0.9,
         zorder=6,
     )
-    ax_hist.set_title("Benchmark test RMSE histogram", fontsize=13, pad=12)
-    ax_hist.set_xlabel("Test RMSE")
-    ax_hist.set_ylabel("Count")
-    ax_hist.legend(loc="upper right", frameon=True, framealpha=0.95)
-
-    fig.suptitle(
-        "Cascaded Tanks benchmark distribution vs. our test result",
-        fontsize=14,
-        y=1.02,
-    )
-    fig.savefig(output_path, dpi=200, bbox_inches="tight")
-    plt.close(fig)
+    ax_hist.set_xlabel("Test RMSE", fontsize=10)
+    ax_hist.set_ylabel("Count", fontsize=10)
+    ax_hist.legend(loc="upper right", frameon=True, framealpha=0.95, fontsize=8)
+    fig_hist.savefig(histogram_output_path, dpi=400, bbox_inches="tight")
+    plt.close(fig_hist)
 
 
 def parse_args() -> argparse.Namespace:
@@ -305,10 +318,16 @@ def parse_args() -> argparse.Namespace:
         help="Workbook containing benchmark test results.",
     )
     parser.add_argument(
-        "--distribution-output",
+        "--boxplot-output",
         type=Path,
-        default=Path(__file__).resolve().with_name("benchmark_test_distribution.png"),
-        help="PNG path for the benchmark distribution plot.",
+        default=Path(__file__).resolve().with_name("benchmark_test_boxplot.png"),
+        help="PNG path for the benchmark RMSE boxplot.",
+    )
+    parser.add_argument(
+        "--histogram-output",
+        type=Path,
+        default=Path(__file__).resolve().with_name("benchmark_test_histogram.png"),
+        help="PNG path for the benchmark RMSE histogram.",
     )
     parser.add_argument(
         "--skip-benchmark",
@@ -364,7 +383,8 @@ def main() -> None:
         plot_benchmark_distribution(
             benchmark_values=benchmark_values,
             my_test_rmse=test_rmse,
-            output_path=args.distribution_output,
+            boxplot_output_path=args.boxplot_output,
+            histogram_output_path=args.histogram_output,
         )
 
     metrics_payload: dict[str, object] = {
@@ -378,6 +398,8 @@ def main() -> None:
         "source_checkpoint_root": str(resolve_checkpoint_root(repo_root, args.checkpoint_set)),
         "benchmark_workbook": str(args.benchmark_workbook),
         "benchmark_distribution_generated": benchmark_values is not None,
+        "benchmark_boxplot_output": str(args.boxplot_output),
+        "benchmark_histogram_output": str(args.histogram_output),
         "notes": "The saved test ensemble predictions were re-evaluated after excluding the configured warmup samples.",
         "recomputed_from_checkpoints": base_metrics,
     }
@@ -393,9 +415,10 @@ def main() -> None:
     print(f"Test RMSE @ warmup={warmup}: {test_rmse:.6f}")
     print(f"Plot saved to: {args.output}")
     if benchmark_values is not None:
-        print(f"Distribution saved to: {args.distribution_output}")
+        print(f"Boxplot saved to: {args.boxplot_output}")
+        print(f"Histogram saved to: {args.histogram_output}")
     else:
-        print("Benchmark workbook not found or skipped: distribution plot not generated.")
+        print("Benchmark workbook not found or skipped: benchmark plots not generated.")
 
 
 if __name__ == "__main__":

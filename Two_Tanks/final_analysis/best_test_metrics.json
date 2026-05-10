@@ -1,0 +1,30 @@
+{
+  "best_validation_description": "LTC CfC n_hidden=64 dt=4.0",
+  "best_validation_label": "LTC CfC",
+  "best_validation_rmse": 0.250034,
+  "checkpoint_set_analyzed": "best_so_far",
+  "warmup_used_for_test_rmse": 0,
+  "test_rmse_denormalized_after_warmup": 0.29151082038879395,
+  "fold_test_rmse_denormalized_after_warmup": [
+    0.36597463488578796,
+    0.3651774227619171
+  ],
+  "source_checkpoint_root": "/home/dpiga/Benchmark_Autoresearch/Two_Tanks/checkpoints/best_so_far",
+  "benchmark_workbook": "/home/dpiga/Benchmark_Autoresearch/Two_Tanks/final_analysis/Benchmark Results.xlsx",
+  "benchmark_distribution_generated": true,
+  "benchmark_boxplot_output": "/home/dpiga/Benchmark_Autoresearch/Two_Tanks/final_analysis/benchmark_test_boxplot.png",
+  "benchmark_histogram_output": "/home/dpiga/Benchmark_Autoresearch/Two_Tanks/final_analysis/benchmark_test_histogram.png",
+  "notes": "The saved test ensemble predictions were re-evaluated after excluding the configured warmup samples.",
+  "recomputed_from_checkpoints": {
+    "checkpoint_set": "best_so_far",
+    "checkpoint_root": "/home/dpiga/Benchmark_Autoresearch/Two_Tanks/checkpoints/best_so_far",
+    "checkpoint_paths": [
+      "/home/dpiga/Benchmark_Autoresearch/Two_Tanks/checkpoints/best_so_far/fold_1/model.pt",
+      "/home/dpiga/Benchmark_Autoresearch/Two_Tanks/checkpoints/best_so_far/fold_2/model.pt"
+    ],
+    "num_models": 2
+  },
+  "benchmark_results_count": 24,
+  "benchmark_results_min": 0.18,
+  "benchmark_results_max": 1.29
+}
