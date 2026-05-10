@@ -1,0 +1,37 @@
+{
+  "benchmark_name": "Cascaded_Tanks",
+  "validation_metric": "rmse",
+  "device": "cpu",
+  "num_folds": 2,
+  "history_window": 5,
+  "sampling_time": 4.0,
+  "full_train_length": 1024,
+  "test_sequence_length": 1019,
+  "initial_condition_dimension": 10,
+  "input_names": [
+    "pump_voltage"
+  ],
+  "output_names": [
+    "tank2_level"
+  ],
+  "train_sequences": [
+    {
+      "name": "fold_1",
+      "start_index": 5,
+      "stop_index": 515,
+      "num_samples": 510
+    },
+    {
+      "name": "fold_2",
+      "start_index": 515,
+      "stop_index": 1024,
+      "num_samples": 509
+    }
+  ],
+  "notes": [
+    "The full training trajectory is split into 2 contiguous folds.",
+    "Each fold starts only after 5 past samples are available.",
+    "The initial-condition vector is [u(k-1)...u(k-5), y(k-1)...y(k-5)].",
+    "Cross-validation is standard leave-one-sequence-out over the 2 folds."
+  ]
+}
