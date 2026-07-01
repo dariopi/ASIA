@@ -1,0 +1,16 @@
+commit	val_RMSE	status	description
+651779b	0.681190	keep	baseline RNN n_hidden=4
+2ad58f2	1.024107	discard	PHYSICAL_RK4 grey-box RK4+overflow — overfits fold_2
+ab3ebd6	0.496895	keep	LSTM n_hidden=64 2-layer direct feedthrough
+b18c76e	1.581442	discard	HYBRID physics+LSTM residual — physical backbone overfits fold_2
+485ff3b	0.248567	keep	LTC CfC n_hidden=64 dt=4s — best so far
+5a69434	0.355295	discard	LTC n_hidden=128 — overfits, worse than n_hidden=64
+ea3a2ee	0.291701	discard	DynamicLTC input-dependent gating — more flexible but overfits more
+1c0f29a	0.251726	discard	LTC-64 frozen tau — same as trainable tau, tau not the overfitting source
+b9f9ada	0.431929	discard	NeuralSSM2 2-state Euler dynamics — overfits (train=0.300, val=0.432)
+077a07a	0.396220	discard	LTC-64 smaller f_net/ic_net [32] — underfits dynamics, val=0.396
+19ab383	0.883824	discard	ESN n=500 fixed reservoir + linear readout — linear readout insufficient for nonlinear tank dynamics
+0dbc3ef	0.661722	discard	TCN 8-layer dilated causal conv — severe overfitting (train=0.013, val=0.784)
+9d5ac05	0.312077	discard	StackedLTC 2-stage cascade [32+32] — balanced folds (0.303/0.320) but worse than LTC-64
+b0b2e57	0.302249	discard	LTC-64 dropout_prob=0.2 — balanced folds (0.284/0.320) but worse than no-dropout (0.249)
+64ac30b	0.315224	discard	LTC-64 hidden_noise_std=0.05 — state noise hurts fold_1 (0.290) without helping fold_2

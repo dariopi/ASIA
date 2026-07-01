@@ -1,0 +1,12 @@
+run_id	best_val_rmse	best_test_rmse	best_arch
+1	0.247103	0.311360	LTC hidden=96 hidden_sizes=[96,64] SiLU lr=1e-3 dt=4.0 direct_feedthrough
+2	0.233156	0.293840	LTC SiLU n_hidden=96 hidden=[128,128] lr=1e-3 dt=4.0 direct_feedthrough
+3	0.205475	0.314362	LTC n_hidden=96 hidden=[96,96] SiLU cosine annealing lr=3e-4 patience=25 direct_feedthrough=True dt=4.0
+4	0.223770	0.330700	LTC n_hidden=64 SiLU CosineAnnealingLR improved val
+5	0.240271	0.353576	GRU hidden=32 layers=2 hidden_sizes=[32,32] Tanh lr=5e-4
+6	0.238185	0.324413	LTC n_hidden=64, SiLU activation, lr=1e-3, direct_feedthrough
+7	0.235668	0.271291	LTC n_hidden=96 hidden=[96,96] SiLU lr=2e-3 max_epochs=3000
+8	0.205138	0.309588	LTC n_hidden=96 hidden=[96,96] SiLU direct_feedthrough=True dt=4.0 AdamW cosine annealing lr=5e-4
+9	0.256545	0.325823	LTC n_hidden=64 hidden=[64,64] dt=4.0 lr=3e-3
+10	0.245219	0.380963	LTC n_hidden=64 hidden=[64,64] Tanh cosine annealing lr=2e-3
+11	0.234942	0.380232	GRU n_hidden=48 layers=3 hidden=[48,48] Tanh dropout=0.1

@@ -1,0 +1,22 @@
+{
+  "metric": "rmse",
+  "metric_scale": "denormalized_physical_units",
+  "plot_scale": "denormalized_physical_units",
+  "warmup_test": 45,
+  "num_models": 2,
+  "fold_test_rmse_denormalized": [
+    0.3394138514995575,
+    0.34595444798469543
+  ],
+  "ensemble_test_rmse_denormalized": 0.29774850606918335,
+  "fold_test_rmse": [
+    0.3394138514995575,
+    0.34595444798469543
+  ],
+  "ensemble_test_rmse": 0.29774850606918335,
+  "ensemble_rule": "Mean of the denormalized predictions of the saved fold models.",
+  "checkpoint_paths": [
+    "checkpoints/best_so_far/fold_1/model.pt",
+    "checkpoints/best_so_far/fold_2/model.pt"
+  ]
+}
