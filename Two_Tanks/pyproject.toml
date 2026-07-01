@@ -1,0 +1,15 @@
+[project]
+name = "cascaded-tank-benchmark"
+version = "0.1.0"
+description = "Benchmark and training code for the cascaded tank system."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "nonlinear_benchmarks",
+    "matplotlib",
+    "numpy",
+    "torch",
+]
+
+[tool.uv]
+package = false

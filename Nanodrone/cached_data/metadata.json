@@ -1,0 +1,58 @@
+{
+  "benchmark_name": "NanoDrone_3Fold",
+  "validation_metric": "mae",
+  "device": "cuda",
+  "num_folds": 3,
+  "seq_len": 50,
+  "n_inputs": 4,
+  "n_outputs": 12,
+  "n_states": 12,
+  "input_names": [
+    "m1_rads",
+    "m2_rads",
+    "m3_rads",
+    "m4_rads"
+  ],
+  "output_names": [
+    "x",
+    "y",
+    "z",
+    "vx",
+    "vy",
+    "vz",
+    "roll",
+    "pitch",
+    "yaw",
+    "wx",
+    "wy",
+    "wz"
+  ],
+  "train_sequences": [
+    {
+      "name": "chirp",
+      "num_windows": 480
+    },
+    {
+      "name": "random",
+      "num_windows": 480
+    },
+    {
+      "name": "square",
+      "num_windows": 152
+    }
+  ],
+  "test_sequences": [
+    {
+      "name": "melon",
+      "num_windows": 390
+    }
+  ],
+  "notes": [
+    "Each fold is one trajectory type (chirp, random, or square).",
+    "Each fold contains all 50-sample windows from all CSV runs of that trajectory.",
+    "y0 is the drone state at the step immediately preceding each window.",
+    "Cross-validation is leave-one-trajectory-out over the 3 training trajectory types.",
+    "Test trajectory is 'melon', held out from training and validation.",
+    "Metric: MAE averaged over all windows, all 50 time steps, and all 12 outputs."
+  ]
+}

@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+.claude/
+checkpoints/
+logs/
+plots/
+random_search/
+final_analysis/
+*.pyc
