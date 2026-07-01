@@ -1,0 +1,16 @@
+commit	val_MAE	status	description
+a1f3b92	0.706694	keep	baseline: LSTM-32 1L direct prediction MSE Adam
+07530cc	0.322879	keep	AutoregressiveDeltaGRU-256 3L state-feedback motor² MAE AdamW cosine-WR teacher-forcing
+a5ad3ea	0.307497	keep	PhysicsResidualCausal — kinematic prior + thrust/torque nets + GRU-256 residual
+25ddf9c	0.310190	discard	PhysicsResidualCausal LSTM + structured thrust — marginal change
+ccc187c	0.308651	discard	PhysicsResidualCausal GRU 4L-384 + motor lag — negligible change
+e42d196	0.344463	discard	PhysicsResidualCausal no teacher-forcing + noise + dropout=0.2 — worse val
+5994e56	0.438221	discard	KoopmanDroneModel — linear latent dynamics too restrictive
+46770c7	0.559873	discard	CausalTCNDrone — dilated causal convolutions, worse generalization than GRU
+dae1103	2.001204	discard	CausalTransformerDrone — causal self-attention, catastrophic train-eval mismatch
+b018402	0.300280	keep	scheduled sampling Bernoulli TF 1.0→0.0 — best gen12 result
+d83b36c	0.309008	discard	input noise augmentation sigma=0.02 on motor commands — slightly worse
+3cff5b6	0.341908	discard	dual-loss TF+free-running — conflicting objectives hurt convergence
+f1a97a7	0.319838	discard	PhysicsResidualCausalDeltaU — Δu features, GRU doesn't learn to use them
+9a7c0c3	0.304173	discard	PhysicsResidualCausal MLP physics subnets — deeper thrust/torque, marginally worse
+1d1912a	0.340670	discard	PhysicsResidualCausal GRU-128 2L WD=5e-4 — smaller residual hurts more than regularizes

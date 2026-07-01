@@ -1,0 +1,16 @@
+commit	val_RMSE	status	description
+cedc2b1	0.681190	keep	[1/15] baseline RNN n_hidden=4
+9ef3401	1.143328	discard	[2/15] PHYSICAL_RK4 Torricelli+RK4 in norm space
+8949c85	0.309133	keep	[3/15] LSTM n_hidden=128 num_layers=2 TBPTT chunk=50
+d7cd03c	0.331897	discard	[4/15] CFC n_hidden=64 Ts=4.0 tau_min=4.0
+7de060b	0.653713	discard	[5/15] DiagonalSSM n_hidden=128 — linear, can't fit nonlinear ODE
+11d6127	0.982152	discard	[6/15] CausalDilatedCNN n_ch=32 n_layers=7 — didn't learn (best@epoch1)
+bab09b0	0.995545	discard	[7/15] HybridLTC n_hidden=64 Ts=4.0 TBPTT — detached physics kills gradient
+5765655	0.266495	keep	[8/15] GRU n_hidden=128 num_layers=2 TBPTT chunk=50
+a03c508	0.416839	discard	[9/15] CascadedLTC n_hidden=64 Ts=4.0 tau_min=4.0 TBPTT
+5ab211d	0.243113	keep	[10/15] GRU n_hidden=256 num_layers=2 TBPTT AdamW CosineWarmRestarts — BEST
+600c6ce	0.734838	discard	[11/15] CausalTransformer d_model=64 n_heads=4 n_layers=3 — overfits (single train seq)
+6d7dc30	0.308931	discard	[12/15] EchoStateNetwork reservoir=500 spectral_r=0.95 — linear readout insufficient
+a78a223	0.299791	discard	[13/15] LSTM n_hidden=256 num_layers=3 TBPTT AdamW Cosine — deeper LSTM worse than GRU-256
+c5a77f4	0.938128	discard	[14/15] KoopmanOperator n_koopman=256 — K eigenvalues>1 → NaN explosion
+fdb06a9	nan	discard	[15/15] NeuralODE n_ode_states=16 RK4 Ts=4.0 — NaN from step 0, large dx/dt diverges

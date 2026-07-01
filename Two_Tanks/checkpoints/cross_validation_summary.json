@@ -1,0 +1,35 @@
+{
+  "metric": "rmse",
+  "training_progress_metric": "normalized_rmse",
+  "num_folds": 2,
+  "train_rmse_norm_mean": 0.07327520102262497,
+  "train_rmse_norm_std": 0.011033177375793457,
+  "validation_rmse_norm_mean": 0.24311283975839615,
+  "validation_rmse_norm_std": 0.05904453247785568,
+  "train_rmse_raw_mean": 0.1560656577348709,
+  "train_rmse_raw_std": 0.03195248544216156,
+  "validation_rmse_raw_mean": 0.5065047442913055,
+  "validation_rmse_raw_std": 0.09600964188575745,
+  "best_epoch_mean": 200.0,
+  "best_epoch_median": 200,
+  "folds": [
+    {
+      "validation_name": "fold_1",
+      "best_epoch": 100,
+      "checkpoint_path": "checkpoints/fold_1/model.pt",
+      "train_rmse_norm": 0.08430837839841843,
+      "validation_rmse_norm": 0.18406830728054047,
+      "train_rmse_raw": 0.18801814317703247,
+      "validation_rmse_raw": 0.4104951024055481
+    },
+    {
+      "validation_name": "fold_2",
+      "best_epoch": 300,
+      "checkpoint_path": "checkpoints/fold_2/model.pt",
+      "train_rmse_norm": 0.06224202364683151,
+      "validation_rmse_norm": 0.30215737223625183,
+      "train_rmse_raw": 0.12411317229270935,
+      "validation_rmse_raw": 0.602514386177063
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "trial": 14,
+  "val_MAE": "0.348021",
+  "model_class": "ResidualLSTM",
+  "lr": "0.00033739662416512953",
+  "weight_decay": "1.499855289417094e-05",
+  "dropout_prob": "0.28069545852203265",
+  "n_hidden": "151",
+  "num_layers": "4",
+  "hidden_sizes": "[128,64]",
+  "batch_size": "128",
+  "description": "ResLSTM h=151 L=4 hs=[128,64] bs=128 lr=3.37e-04 do=0.28 wd=1e-05"
+}
